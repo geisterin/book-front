@@ -22,7 +22,6 @@ import AdminGreeting from './AdminGreeting';
 const BookListPage = () => {
   const [books, setBooks] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredBooks, setFilteredBooks] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
   const navigate = useNavigate();
@@ -34,30 +33,32 @@ const BookListPage = () => {
   const limit = 9;
 
   useEffect(() => {
-    fetchBooks(page);
     fetchCategories();
-  }, [page]);
+  }, []);
 
   useEffect(() => {
-    const filtered = books.filter(book =>
-      (book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      book.authors?.some(author =>
-        `${author.first_name} ${author.last_name}`.toLowerCase().includes(searchQuery.toLowerCase())
-      )) &&
-      (!selectedCategory || book.category?.name === selectedCategory)
-    );
-    setFilteredBooks(filtered);
-  }, [searchQuery, selectedCategory, books]);
+    fetchBooks();
+  }, [searchQuery, selectedCategory, page]);
 
-  const fetchBooks = async (pageNum = 1) => {
+  const fetchBooks = async () => {
     try {
-      const response = await axios.get(`/books?limit=${limit}&page=${pageNum}`, {
+      const params = {
+        title: searchQuery,
+        category: selectedCategory,
+        page,
+        limit
+      };
+      // Удаляем пустые параметры
+      Object.keys(params).forEach(key => {
+        if (!params[key]) delete params[key];
+      });
+      const response = await axios.get('/books/search', {
+        params,
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
       });
       setBooks(response.data.books || []);
-      setFilteredBooks(response.data.books || []);
       setTotal(response.data.total || 0);
       setTotalPages(response.data.totalPages || 1);
     } catch (error) {
@@ -75,10 +76,12 @@ const BookListPage = () => {
   };
 
   const handleSearch = (event) => {
+    setPage(1);
     setSearchQuery(event.target.value);
   };
 
   const handleCategoryChange = (event) => {
+    setPage(1);
     setSelectedCategory(event.target.value);
   };
 
@@ -90,7 +93,6 @@ const BookListPage = () => {
         },
       });
       setBooks((prev) => prev.filter((book) => book.id !== id));
-      setFilteredBooks((prev) => prev.filter((book) => book.id !== id));
     } catch (error) {
       console.error('Ошибка при удалении книги:', error);
     }
@@ -169,13 +171,13 @@ const BookListPage = () => {
           </Grid>
         </Grid>
 
-        {filteredBooks.length === 0 ? (
+        {books.length === 0 ? (
           <Typography variant="h6" align="center" sx={{ mt: 4 }}>
             Книги не найдены
           </Typography>
         ) : (
           <Grid container spacing={3}>
-            {filteredBooks.map((book) => (
+            {books.map((book) => (
               <Grid item xs={12} sm={6} md={4} key={book.id}>
                 <Card 
                   sx={{ 
