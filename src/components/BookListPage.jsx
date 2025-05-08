@@ -18,6 +18,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import axios from '../api/axios';
 import AdminGreeting from './AdminGreeting';
+import UserGreeting from './UserGreeting';
 
 const BookListPage = () => {
   const [books, setBooks] = useState([]);
@@ -102,6 +103,9 @@ const BookListPage = () => {
     <Container maxWidth="lg" sx={{ mt: 4 }}>
       {userRole === 'admin' && (
         <AdminGreeting user={{ role: userRole }} />
+      )}
+      {userRole === 'user' && (
+        <UserGreeting />
       )}
       <Box sx={{ my: 4 }}>
         <Typography 
